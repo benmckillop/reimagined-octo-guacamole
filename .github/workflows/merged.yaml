@@ -1,0 +1,32 @@
+name: Manual iOS Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_configuration:
+        description: 'Which build configuration to use'
+        required: true
+        default: 'Staging'
+        type: choice
+        options:
+        - Dev
+        - Build
+        - Staging
+        - Integration
+    
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  increment_version:
+    needs: []
+    name: Increment Version
+    runs-on: macos-26
+    steps:
+      - name: Increment Version
+        id: versioning
+        uses: ./.github/actions/action.yml
+        with:
+          ACTION_TYPE: 'Release'
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

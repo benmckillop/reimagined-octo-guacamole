@@ -1,0 +1,65 @@
+name: 'Release Version'
+description: 'Create new GitHub release using Conventional Commits'
+icon: 'git-merge'
+color: 'yellow'
+inputs:
+  GITHUB_TOKEN:
+    description: 'GitHub Actions token with write permissions, see docs: https://docs.github.com/en/actions/security-guides/automatic-token-authentication'
+    required: false
+  ACTION_TYPE:
+    description: 'Which type of action to perform.'
+    required: true
+    type: choice
+    options:
+    - Release
+    - Validate
+  SUFFIX:
+    description: 'A suffix to be added to the end of the release version'
+    required: false
+    type: string
+  TAG_ONLY:
+    description: 'True if a Git tag should be created but not a GitHub release'
+    required: false
+    type: boolean
+    default: false
+  CONTAINS_BREAKING_CHANGE:
+    description: 'Whether the commit being validated contains a breaking change to the public facing API'
+    required: false
+    default: 'false'
+
+outputs:
+  release_version:
+    description: "Release version in semantic format; e.g. 1.0.0"
+    value: ${{ steps.release.outputs.version }}
+runs:
+  using: "composite"
+  steps:
+    - name: Build Package
+      working-directory: ${{ github.action_path }}
+      shell: bash
+      run: swift build
+      
+    - name: Validate
+      if: ${{ inputs.ACTION_TYPE == 'Validate' }}
+      working-directory: ${{ github.action_path }}
+      shell: bash
+      run: |
+       swift run --skip-build Run validate \
+         --message "${{ github.event.pull_request.title }}" \
+         --contains-breaking-change ${{ inputs.CONTAINS_BREAKING_CHANGE }}
+      
+    - name: Release
+      id: release
+      if: ${{ inputs.ACTION_TYPE == 'Release' }}
+      working-directory: ${{ github.action_path }}
+      shell: bash
+      run: |
+        version=$(swift run --skip-build Run increment \
+          --repository $GITHUB_REPOSITORY \
+          --sha $GITHUB_SHA \
+          --token ${{inputs.GITHUB_TOKEN}} \
+          --tag-only ${{inputs.TAG_ONLY}} \
+          --suffix ${{inputs.SUFFIX}} \
+        )
+        
+        echo "version=$version" >> $GITHUB_OUTPUT
