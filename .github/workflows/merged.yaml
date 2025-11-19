@@ -13,23 +13,28 @@ on:
         - Build
         - Staging
         - Integration
-    
-permissions:
-  id-token: write
-  contents: read
+        
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-
-  increment_version:
-    needs: []
-    name: Increment Version
+  build:
+    name: Validate commits and run tests
+    if: github.event.pull_request.draft == false
     runs-on: macos-26
+    
     steps:
       - name: Checkout
         uses: actions/checkout@v5
-      - name: Increment Version
-        id: versioning
-        uses: ./action.yml
         with:
-          ACTION_TYPE: 'Release'
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+    
+      - name: Validate pull request title
+        uses: ./
+        with:
+          ACTION_TYPE: 'Validate'
+          CONTAINS_BREAKING_CHANGE: ${{ steps.detect_breaking_changes.outcome != 'success' }}
+
+      - name: Run Tests
+        run: swift test
