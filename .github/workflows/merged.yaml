@@ -19,11 +19,14 @@ permissions:
   contents: read
 
 jobs:
+
   increment_version:
     needs: []
     name: Increment Version
     runs-on: macos-26
     steps:
+      - name: Checkout
+        uses: actions/checkout@v5
       - name: Increment Version
         id: versioning
         uses: ./action.yml
