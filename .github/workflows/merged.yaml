@@ -26,7 +26,7 @@ jobs:
     steps:
       - name: Increment Version
         id: versioning
-        uses: ./.github/actions/action.yml
+        uses: ./action.yml
         with:
           ACTION_TYPE: 'Release'
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
